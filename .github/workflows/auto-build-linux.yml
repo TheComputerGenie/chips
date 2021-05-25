@@ -1,0 +1,121 @@
+name: CHIPS test release (Linux)
+
+on:
+  push:
+    branches:
+    - Update
+
+jobs:
+
+  linux-build:
+    name: Linux Build
+    runs-on: ubuntu-18.04
+    steps:
+
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+
+      - name: Shortify commit sha
+        shell: bash
+        run: echo "##[set-output name=sha_short;]$(echo ${GITHUB_SHA::7})"
+        id: shortify_commit
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install system deps (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev bsdmainutils python3 -y
+          sudo apt-get install libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler -y
+          sudo apt-get install libqrencode-dev libminiupnpc-dev libzmq3-dev g++-aarch64-linux-gnu binutils-aarch64-linux-gnu -y
+          sudo apt-get install libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-program-options-dev libboost-test-dev libboost-thread-dev -y
+
+      - name: Install app deps (Linux)
+        run: |
+          cd depends
+          make
+          cd ..
+
+      - name: Build apps (Linux)
+        run: |
+          ./build.sh
+      - name: Clean and zip files (Linux)
+        run: |
+          strip src/chipsd
+          strip src/chips-cli
+          strip src/qt/chips-qt
+          mv src/chipsd src/chipsd-linux
+          mv src/chips-cli src/chips-cli-linux
+          mv src/qt/chips-qt src/qt/chips-qt-linux
+          zip --junk-paths chips-cli-linux src/chipsd-linux src/chips-cli-linux
+          zip --junk-paths chips-qt-linux src/qt/chips-qt-linux
+      - name: Upload chips-cli-linux.zip as artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: chips-cli-linux
+          path: ./chips-cli-linux.zip
+      - name: Upload chips-qt-linux.zip as artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: chips-qt-linux
+          path: ./chips-qt-linux.zip
+ 
+
+  publish-release:
+      name: Publishing releases
+      runs-on: ubuntu-latest
+      needs: [linux-build]
+      steps: 
+        - name: Download chips-qt-linux.zip
+          uses: actions/download-artifact@v1
+          with:
+            name: chips-qt-linux
+        - name: Download chips-cli-linux.zip
+          uses: actions/download-artifact@v1
+          with:
+            name: chips-cli-linux 
+
+        - name: Extract branch name
+          shell: bash
+          run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+          id: extract_branch
+
+        - name: Shortify commit sha
+          shell: bash
+          run: echo "##[set-output name=sha_short;]$(echo ${GITHUB_SHA::7})"
+          id: shortify_commit
+
+        - name: Create Release
+          id: create_release
+          uses: actions/create-release@latest
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            tag_name: cd_release_${{ steps.shortify_commit.outputs.sha_short }}_${{ steps.extract_branch.outputs.branch }}
+            release_name: CD Release ${{ steps.shortify_commit.outputs.sha_short }} ${{ steps.extract_branch.outputs.branch }}
+            draft: false
+            prerelease: true
+
+        - name: Upload Linux Qt Release Asset
+          id: upload-linux-qt-release-asset 
+          uses: actions/upload-release-asset@latest
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ steps.create_release.outputs.upload_url }} 
+            asset_path: chips-qt-linux/chips-qt-linux.zip
+            asset_name: chips${{ steps.shortify_commit.outputs.sha_short }}_${{ steps.extract_branch.outputs.branch }}_qt_linux.zip
+            asset_content_type: application/zip
+        - name: Upload Linux CLI Release Asset
+          id: upload-linux-cli-release-asset 
+          uses: actions/upload-release-asset@latest
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ steps.create_release.outputs.upload_url }} 
+            asset_path: chips-cli-linux/chips-cli-linux.zip
+            asset_name: chips${{ steps.shortify_commit.outputs.sha_short }}_${{ steps.extract_branch.outputs.branch }}_cli_linux.zip
+            asset_content_type: application/zip

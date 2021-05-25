@@ -35,7 +35,7 @@ EOL
 buildCHIPS() {
     git pull
     ./autogen.sh
-    ./configure LDFLAGS="-L${CHIPS_PREFIX}/lib/" CPPFLAGS="-I${CHIPS_PREFIX}/include/" --with-gui=no --disable-tests --disable-bench --without-miniupnpc --enable-experimental-asm --enable-static --disable-shared
+    ./configure --prefix=${CHIPS_ROOT}/depends/x86_64-pc-linux-gnu LDFLAGS="-L${CHIPS_PREFIX}/lib/" CPPFLAGS="-I${CHIPS_PREFIX}/include/" --with-gui=yes --disable-tests --disable-bench --without-miniupnpc --enable-experimental-asm --enable-static
     make -j$(nproc)
 }
 berkeleydb
