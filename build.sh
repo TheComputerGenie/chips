@@ -1,14 +1,13 @@
-#!/bin/bash
-# EMC2 build script for Ubuntu & Debian 9 v.3 (c) Decker (and webworker)
-# modified for CHIPS by Duke Leto
-
+# from multiple sources and scripts (mostly from DeckerSU)
 berkeleydb() {
-    CHIPS_ROOT=$(pwd)
-    CHIPS_PREFIX="${CHIPS_ROOT}/db4"
-    mkdir -p $CHIPS_PREFIX
-    wget -N 'http://download.oracle.com/berkeley-db/db-4.8.30.NC.tar.gz'
+    MIL_ROOT=$(pwd)
+    MIL_PREFIX="${MIL_ROOT}/db4"
+    
+    mkdir -p $MIL_PREFIX
+    wget -N 'https://download.oracle.com/berkeley-db/db-4.8.30.NC.tar.gz'
     echo '12edc0df75bf9abd7f82f821795bcee50f42cb2e5f76a6a281b85732798364ef db-4.8.30.NC.tar.gz' | sha256sum -c
     tar -xzvf db-4.8.30.NC.tar.gz
+    
     cat <<-EOL >atomic-builtin-test.cpp
         #include <stdint.h>
         #include "atomic.h"
@@ -26,18 +25,26 @@ EOL
         echo "Updating atomic.h file ..."
         sed -i 's/__atomic_compare_exchange/__atomic_compare_exchange_db/g' db-4.8.30.NC/dbinc/atomic.h
     fi
+    
     cd db-4.8.30.NC/build_unix/
-    ../dist/configure -enable-cxx -disable-shared -with-pic -prefix=$CHIPS_PREFIX
+    ../dist/configure -enable-cxx -disable-shared -with-pic -prefix=$MIL_PREFIX
     make install
-    cd $CHIPS_ROOT
+    
+    cd $MIL_ROOT
 }
 
-buildCHIPS() {
-    git pull
-    ./autogen.sh
-    ./configure LDFLAGS="-L${CHIPS_PREFIX}/lib/" CPPFLAGS="-I${CHIPS_PREFIX}/include/" --with-gui=no --disable-tests --disable-bench --without-miniupnpc --enable-experimental-asm --enable-static --disable-shared
+buildMIL() {
+
+	make -C ${PWD}/depends v=1 NO_PROTON=0 NO_QT=0 HOST=$(depends/config.guess) -j10
+
+	./autogen.sh
+
+	CXXFLAGS="-g0 -O2" \
+	CONFIG_SITE="$PWD/depends/$(depends/config.guess)/share/config.site"
+
+	./configure LDFLAGS="-L${MIL_PREFIX}/lib/" CPPFLAGS="-I${MIL_PREFIX}/include/" --with-gui=yes --disable-tests --disable-bench --without-miniupnpc --enable-experimental-asm --enable-static --disable-shared
     make -j$(nproc)
 }
 berkeleydb
-buildCHIPS
-echo "Done building CHIPS!"
+buildMIL
+echo "Done building MIL!"
