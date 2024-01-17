@@ -1,6 +1,6 @@
 package=dbus
-$(package)_version=1.10.18
-$(package)_download_path=https://dbus.freedesktop.org/releases/dbus
+$(package)_version=1.8.6
+$(package)_download_path=https://src.fedoraproject.org/repo/pkgs/dbus/dbus-1.8.6.tar.gz/6a08ba555d340e9dfe2d623b83c0eea8/
 $(package)_file_name=$(package)-$($(package)_version).tar.gz
 $(package)_sha256_hash=6049ddd5f3f3e2618f615f1faeda0a115104423a7996b7aa73e2f36e38cc514a
 $(package)_dependencies=expat
