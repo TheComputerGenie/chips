@@ -1,9 +1,9 @@
 # from multiple sources and scripts (mostly from DeckerSU)
 berkeleydb() {
-    MIL_ROOT=$(pwd)
-    MIL_PREFIX="${MIL_ROOT}/db4"
+    CHIPS_ROOT=$(pwd)
+    CHIPS_PREFIX="${CHIPS_ROOT}/db4"
     
-    mkdir -p $MIL_PREFIX
+    mkdir -p $CHIPS_PREFIX
     wget -N 'https://download.oracle.com/berkeley-db/db-4.8.30.NC.tar.gz'
     echo '12edc0df75bf9abd7f82f821795bcee50f42cb2e5f76a6a281b85732798364ef db-4.8.30.NC.tar.gz' | sha256sum -c
     tar -xzvf db-4.8.30.NC.tar.gz
@@ -27,13 +27,13 @@ EOL
     fi
     
     cd db-4.8.30.NC/build_unix/
-    ../dist/configure -enable-cxx -disable-shared -with-pic -prefix=$MIL_PREFIX
+    ../dist/configure -enable-cxx -disable-shared -with-pic -prefix=$CHIPS_PREFIX
     make install
     
-    cd $MIL_ROOT
+    cd $CHIPS_ROOT
 }
 
-buildMIL() {
+buildCHIPS() {
 
 	make -C ${PWD}/depends v=1 NO_PROTON=0 NO_QT=0 HOST=$(depends/config.guess) -j10
 
@@ -42,9 +42,9 @@ buildMIL() {
 	CXXFLAGS="-g0 -O2" \
 	CONFIG_SITE="$PWD/depends/$(depends/config.guess)/share/config.site"
 
-	./configure LDFLAGS="-L${MIL_PREFIX}/lib/" CPPFLAGS="-I${MIL_PREFIX}/include/" --with-gui=yes --disable-tests --disable-bench --without-miniupnpc --enable-experimental-asm --enable-static --disable-shared
+	./configure LDFLAGS="-L${CHIPS_PREFIX}/lib/" CPPFLAGS="-I${CHIPS_PREFIX}/include/" --with-gui=yes --disable-tests --disable-bench --without-miniupnpc --enable-experimental-asm --enable-static --disable-shared
     make -j$(nproc)
 }
 berkeleydb
-buildMIL
-echo "Done building MIL!"
+buildCHIPS
+echo "Done building CHIPS!"
